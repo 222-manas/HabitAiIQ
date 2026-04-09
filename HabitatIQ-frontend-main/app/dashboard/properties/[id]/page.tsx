@@ -12,6 +12,8 @@ import {
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { use } from 'react';
+import EmiCalculator from '@/components/EmiCalculator';
+import SimilarProperties from '@/components/SimilarProperties';
 
 const formatPrice = (price: number) => {
     if (price >= 10000000) return `₹${(price / 10000000).toFixed(2)} Cr`;
@@ -345,9 +347,21 @@ export default function PropertyDetailsPage({ params }: { params: Promise<{ id: 
                                 )}
 
                                 <VisitForm propertyId={property._id} />
+                                
+                                <div className="mt-6">
+                                    <EmiCalculator propertyPrice={property.price} />
+                                </div>
                             </div>
                         </div>
                     </div>
+                    
+                    {/* Similar Properties Recommendation */}
+                    <SimilarProperties 
+                        currentPropertyId={property._id} 
+                        city={property.city} 
+                        locality={property.locality} 
+                        propertyType={property.propertyType} 
+                    />
                 </div>
             </div>
         </div>

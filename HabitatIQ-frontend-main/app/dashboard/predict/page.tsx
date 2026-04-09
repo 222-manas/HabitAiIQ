@@ -3,7 +3,13 @@
 import { useState } from 'react';
 import { fetchApi } from '@/lib/api';
 import { PricePrediction } from '@/types/property';
-import { TrendingUp, Loader2, Info } from 'lucide-react';
+import { TrendingUp, Loader2, Info, MapPin } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const MapPicker = dynamic(() => import('@/components/MapPicker'), { 
+    ssr: false, 
+    loading: () => <div className="h-[300px] w-full bg-[#1e293b] rounded-xl flex items-center justify-center animate-pulse text-white/50 border border-white/10">Loading map...</div> 
+});
 
 const formatPrice = (price: number) => {
     if (price >= 10000000) return `₹${(price / 10000000).toFixed(2)} Cr`;
@@ -19,6 +25,7 @@ export default function PredictPricePage() {
         areaSqft: '',
         bedrooms: '',
         bathrooms: '',
+        age: '',
         propertyType: 'apartment'
     });
 
@@ -29,6 +36,15 @@ export default function PredictPricePage() {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleLocationSelect = (location: { state: string; city: string; locality: string }) => {
+        setFormData(prev => ({
+            ...prev,
+            state: location.state || prev.state,
+            city: location.city || prev.city,
+            locality: location.locality || prev.locality
+        }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -43,16 +59,29 @@ export default function PredictPricePage() {
         }
 
         try {
-            const data = await fetchApi<PricePrediction>('/predict-price', {
+            const response = await fetch('http://127.0.0.1:8000/predict-price', {
                 method: 'POST',
-                requiresAuth: true,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({
-                    ...formData,
+                    state: formData.state,
+                    city: formData.city,
+                    locality: formData.locality,
+                    propertyType: formData.propertyType,
                     areaSqft: Number(formData.areaSqft),
                     bedrooms: Number(formData.bedrooms),
-                    bathrooms: Number(formData.bathrooms)
+                    bathrooms: Number(formData.bathrooms),
+                    age: Number(formData.age)
                 })
             });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || 'Failed to fetch prediction from model');
+            }
+
+            const data = await response.json();
             setPrediction(data);
         } catch (err: any) {
             setError(err.message || 'Failed to predict price');
@@ -86,6 +115,14 @@ export default function PredictPricePage() {
                 >
                     <form onSubmit={handleSubmit} className="space-y-6">
 
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
+                                <MapPin className="w-4 h-4" />
+                                Drop a Pin to Auto-Fill Location
+                            </label>
+                            <MapPicker onLocationSelect={handleLocationSelect} />
+                        </div>
+
                         <div className="grid grid-cols-2 gap-5">
                             <div>
                                 <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>State</label>
@@ -112,7 +149,7 @@ export default function PredictPricePage() {
                             </select>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-4 gap-4">
                             <div>
                                 <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>Area (sqft)</label>
                                 <input required name="areaSqft" type="number" min="100" value={formData.areaSqft} onChange={handleInputChange} placeholder="e.g. 1200" className={inputClass} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
@@ -124,6 +161,10 @@ export default function PredictPricePage() {
                             <div>
                                 <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>Bathrooms</label>
                                 <input required name="bathrooms" type="number" min="0" value={formData.bathrooms} onChange={handleInputChange} placeholder="e.g. 2" className={inputClass} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>Age (Years)</label>
+                                <input required name="age" type="number" min="0" value={formData.age} onChange={handleInputChange} placeholder="e.g. 5" className={inputClass} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
                             </div>
                         </div>
 
