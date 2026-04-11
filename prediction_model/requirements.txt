@@ -4,3 +4,7 @@ joblib
 numpy
 fastapi
 uvicorn
+seaborn
+matplotlib
+streamlit
+plotly

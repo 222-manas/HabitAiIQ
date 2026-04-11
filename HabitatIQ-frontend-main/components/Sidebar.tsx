@@ -25,6 +25,7 @@ const NAV_ITEMS = [
     { name: 'Visits', href: '/dashboard/visits', icon: Calendar },
     { name: 'Price Predict', href: '/dashboard/predict', icon: TrendingUp },
     { name: 'Investment', href: '/dashboard/investment', icon: LineChart },
+    { name: 'Growth Predictor', href: '/dashboard/investment/growth', icon: TrendingUp },
 ];
 
 export default function Sidebar() {
